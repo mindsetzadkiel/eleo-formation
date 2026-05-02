@@ -1,0 +1,415 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── USERS & AUTH ───────────────────────────────────────────────
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  role          String   @default("APPRENANT") // ADMIN, FORMATEUR, APPRENANT, ENTREPRISE_CLIENTE
+  phone         String?
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  learnerProfile  Learner?
+  trainerSessions Session[]     @relation("SessionTrainer")
+  companyProfile  Company?
+  auditLogs       AuditLog[]
+  aiConversations AIConversation[]
+}
+
+// ─── FORMATIONS ─────────────────────────────────────────────────
+
+model Formation {
+  id                    String   @id @default(cuid())
+  title                 String
+  slug                  String   @unique
+  description           String
+  objectives            String   // objectifs pédagogiques
+  targetAudience        String   // public cible
+  nonTargetAudience     String   // public non cible
+  prerequisites         String
+  duration              Int      // heures
+  format                String   // DISTANCE, PRESENTIEL, HYBRIDE
+  priceHT               Float
+  accessModalities      String
+  accessDelay           String   // délais d'accès
+  disabilityAccess      String   // accessibilité handicap
+  teachingMethods       String   // méthodes pédagogiques
+  evaluationMethods     String   // modalités d'évaluation
+  status                String   @default("BROUILLON") // BROUILLON, PUBLIEE, ARCHIVEE
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  modules               Module[]
+  sessions              Session[]
+  opcoDocuments         OPCODocument[]
+  prospects             Prospect[]
+}
+
+model Module {
+  id           String   @id @default(cuid())
+  formationId  String
+  title        String
+  description  String
+  orderIndex   Int
+  content      String   // contenu texte/markdown
+  duration     Int      // minutes
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  formation    Formation @relation(fields: [formationId], references: [id], onDelete: Cascade)
+  lessons      Lesson[]
+  quizzes      Quiz[]
+}
+
+model Lesson {
+  id          String   @id @default(cuid())
+  moduleId    String
+  title       String
+  content     String
+  orderIndex  Int
+  type        String   @default("TEXT") // TEXT, VIDEO, EXERCISE, CASE_STUDY
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  completions LessonCompletion[]
+}
+
+model LessonCompletion {
+  id         String   @id @default(cuid())
+  lessonId   String
+  learnerId  String
+  completedAt DateTime @default(now())
+
+  lesson     Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  learner    Learner  @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, learnerId])
+}
+
+// ─── QUIZ & EVALUATION ─────────────────────────────────────────
+
+model Quiz {
+  id         String   @id @default(cuid())
+  moduleId   String
+  title      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  module     Module       @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  questions  QuizQuestion[]
+  attempts   QuizAttempt[]
+}
+
+model QuizQuestion {
+  id            String   @id @default(cuid())
+  quizId        String
+  question      String
+  type          String   @default("MCQ") // MCQ, OPEN
+  options       String?  // JSON array for MCQ
+  correctAnswer String
+  points        Int      @default(1)
+  orderIndex    Int
+
+  quiz          Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers       QuizAnswer[]
+}
+
+model QuizAttempt {
+  id         String   @id @default(cuid())
+  quizId     String
+  learnerId  String
+  score      Float?
+  maxScore   Float?
+  passed     Boolean?
+  validatedByTrainer Boolean @default(false)
+  startedAt  DateTime @default(now())
+  completedAt DateTime?
+
+  quiz       Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  learner    Learner  @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  answers    QuizAnswer[]
+}
+
+model QuizAnswer {
+  id          String   @id @default(cuid())
+  attemptId   String
+  questionId  String
+  answer      String
+  isCorrect   Boolean?
+  points      Float    @default(0)
+
+  attempt     QuizAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question    QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+// ─── SESSIONS ───────────────────────────────────────────────────
+
+model Session {
+  id           String   @id @default(cuid())
+  formationId  String
+  trainerId    String?
+  startDate    DateTime
+  endDate      DateTime
+  maxPlaces    Int      @default(8)
+  format       String   // DISTANCE, PRESENTIEL, HYBRIDE
+  location     String?
+  status       String   @default("BROUILLON") // BROUILLON, OUVERTE, COMPLETE, TERMINEE, ARCHIVEE
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  formation    Formation @relation(fields: [formationId], references: [id])
+  trainer      User?     @relation("SessionTrainer", fields: [trainerId], references: [id])
+  enrollments  Enrollment[]
+  attendances  Attendance[]
+  workshops    Workshop[]
+}
+
+model Enrollment {
+  id         String   @id @default(cuid())
+  sessionId  String
+  learnerId  String
+  status     String   @default("INSCRIT") // INSCRIT, EN_COURS, TERMINE, ABANDONNE
+  enrolledAt DateTime @default(now())
+
+  session    Session  @relation(fields: [sessionId], references: [id])
+  learner    Learner  @relation(fields: [learnerId], references: [id])
+
+  @@unique([sessionId, learnerId])
+}
+
+// ─── LEARNERS ───────────────────────────────────────────────────
+
+model Learner {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  companyId       String?
+  funding         String?  // ENTREPRISE, OPCO, FRANCE_TRAVAIL, FONDS_PROPRES
+  specialNeeds    String?
+  currentLevel    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id])
+  company         Company? @relation(fields: [companyId], references: [id])
+  enrollments     Enrollment[]
+  completions     LessonCompletion[]
+  quizAttempts    QuizAttempt[]
+  documents       LearnerDocument[]
+  submissions     Submission[]
+}
+
+model LearnerDocument {
+  id         String   @id @default(cuid())
+  learnerId  String
+  name       String
+  type       String   // CONVENTION_SIGNEE, ATTESTATION, EVALUATION, AUTRE
+  filePath   String?
+  status     String   @default("EN_ATTENTE") // EN_ATTENTE, SIGNE, VALIDE
+  createdAt  DateTime @default(now())
+
+  learner    Learner  @relation(fields: [learnerId], references: [id])
+}
+
+model Submission {
+  id         String   @id @default(cuid())
+  learnerId  String
+  title      String
+  content    String
+  filePath   String?
+  grade      Float?
+  feedback   String?
+  status     String   @default("SOUMIS") // SOUMIS, CORRIGE, VALIDE
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  learner    Learner  @relation(fields: [learnerId], references: [id])
+}
+
+// ─── COMPANIES ──────────────────────────────────────────────────
+
+model Company {
+  id            String   @id @default(cuid())
+  userId        String?  @unique
+  name          String
+  siret         String?
+  address       String?
+  contactName   String?
+  contactEmail  String?
+  contactPhone  String?
+  opcoName      String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User?    @relation(fields: [userId], references: [id])
+  learners      Learner[]
+  prospects     Prospect[]
+  opcoDocuments OPCODocument[]
+}
+
+// ─── CRM PROSPECTS ──────────────────────────────────────────────
+
+model Prospect {
+  id               String   @id @default(cuid())
+  firstName        String
+  lastName         String
+  email            String
+  phone            String?
+  companyName      String?
+  companySiret     String?
+  professionalGoal String?
+  formationId      String?
+  currentLevel     String?
+  preferredFormat  String?
+  idealDelay       String?
+  message          String?
+  fundingMode      String   // ENTREPRISE, OPCO, FRANCE_TRAVAIL, FONDS_PROPRES, NE_SAIT_PAS, STAGE_ALTERNANCE, IMMERSION_GRATUITE, CANDIDATURE_EMPLOI
+  status           String   @default("NOUVEAU")
+  source           String   @default("SITE") // SITE, FRANCE_TRAVAIL, OPCO, ENTREPRISE, BOUCHE_A_OREILLE, FONDS_PROPRES
+  notes            String?
+  nextActionDate   DateTime?
+  nextAction       String?
+  autoRefused      Boolean  @default(false)
+  refusalReason    String?
+  companyId        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  formation        Formation? @relation(fields: [formationId], references: [id])
+  company          Company?   @relation(fields: [companyId], references: [id])
+}
+
+// ─── OPCO DOCUMENTS ─────────────────────────────────────────────
+
+model OPCODocument {
+  id           String   @id @default(cuid())
+  formationId  String
+  companyId    String?
+  type         String   // DEVIS, PROGRAMME, CONVENTION, CONVOCATION, EMARGEMENT, CERTIFICAT, ATTESTATION, SATISFACTION, EVAL_CHAUD, EVAL_FROID, FACTURE
+  status       String   @default("A_GENERER") // A_GENERER, GENERE, ENVOYE, SIGNE, VALIDE
+  filePath     String?
+  remarks      String?
+  generatedAt  DateTime?
+  sentAt       DateTime?
+  signedAt     DateTime?
+  validatedAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  formation    Formation @relation(fields: [formationId], references: [id])
+  company      Company?  @relation(fields: [companyId], references: [id])
+}
+
+// ─── QUALIOPI ───────────────────────────────────────────────────
+
+model QualiopiCriterion {
+  id           String   @id @default(cuid())
+  number       Int      @unique
+  title        String
+  description  String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  items        QualiopiItem[]
+}
+
+model QualiopiItem {
+  id           String   @id @default(cuid())
+  criterionId  String
+  label        String
+  description  String?
+  status       String   @default("A_FAIRE") // A_FAIRE, EN_COURS, FAIT, VALIDE
+  documentPath String?
+  comments     String?
+  lastUpdated  DateTime @default(now())
+
+  criterion    QualiopiCriterion @relation(fields: [criterionId], references: [id])
+}
+
+// ─── WORKSHOP (ATELIER) ────────────────────────────────────────
+
+model Workshop {
+  id           String   @id @default(cuid())
+  sessionId    String
+  date         DateTime
+  title        String
+  description  String?
+  equipment    String?  // JSON array
+  safetyNotes  String?
+  practicalCases String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  session      Session  @relation(fields: [sessionId], references: [id])
+  attendances  Attendance[]
+}
+
+model Attendance {
+  id          String   @id @default(cuid())
+  sessionId   String
+  workshopId  String?
+  learnerId   String
+  date        DateTime
+  present     Boolean  @default(false)
+  signature   String?
+  practicalGrade Float?
+  notes       String?
+
+  session     Session   @relation(fields: [sessionId], references: [id])
+  workshop    Workshop? @relation(fields: [workshopId], references: [id])
+
+  @@unique([sessionId, learnerId, date])
+}
+
+// ─── EMAIL TEMPLATES ────────────────────────────────────────────
+
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  subject   String
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── AI CONVERSATIONS ──────────────────────────────────────────
+
+model AIConversation {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  messages  String   // JSON array
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User @relation(fields: [userId], references: [id])
+}
+
+// ─── AUDIT LOG ──────────────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  details   String?
+  createdAt DateTime @default(now())
+
+  user      User? @relation(fields: [userId], references: [id])
+}

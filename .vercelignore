@@ -1,0 +1,11 @@
+# Scripts d'analyse WordPress (uniquement utiles en local)
+scripts/wp-*.mjs
+
+# Dumps locaux
+wp-page-*.json
+wp-page-*.html
+wp-elementor-*.json
+
+# SQLite legacy
+prisma/dev.db
+*.db

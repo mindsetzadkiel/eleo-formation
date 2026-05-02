@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+/* Désactive l'auto-dark-mode (prefers-color-scheme).
+   Le site Eleo est volontairement en mode clair (blanc + bleu + orange).
+   Les classes dark:* n'activent que si une classe .dark est présente sur un parent. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ─── Eleo Informatique brand palette ─────────────────────────────
+   Couleur principale officielle : #0170B9 (bleu Eleo)
+   Inspirée des sites eleo-informatique.fr et shop.eleo-informatique.fr
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  --background: #ffffff;
+  --foreground: #3a3a3a;
+
+  /* Eleo blue scale (primary) */
+  --eleo-50:  #e6f1f8;
+  --eleo-100: #cce3f1;
+  --eleo-200: #99c7e3;
+  --eleo-300: #66abd5;
+  --eleo-400: #338fc7;
+  --eleo-500: #0170B9;
+  --eleo-600: #015a94;
+  --eleo-700: #01436f;
+  --eleo-800: #002d4a;
+  --eleo-900: #001625;
+
+  /* Eleo orange scale (secondary brand color, from shop.eleo-informatique.fr)
+     Couleur officielle : #ff6900 */
+  --eleo-orange-50:  #fff7ed;
+  --eleo-orange-100: #ffedd5;
+  --eleo-orange-200: #fed7aa;
+  --eleo-orange-300: #fdba74;
+  --eleo-orange-400: #fb923c;
+  --eleo-orange-500: #ff6900;
+  --eleo-orange-600: #ea580c;
+  --eleo-orange-700: #c2410c;
+  --eleo-orange-800: #9a3412;
+  --eleo-orange-900: #7c2d12;
+
+  /* Eleo neutral grays (from astra theme variables) */
+  --eleo-gray-50:  #fafafa;
+  --eleo-gray-100: #f5f5f5;
+  --eleo-gray-200: #e5e5e5;
+  --eleo-gray-300: #d4d4d4;
+  --eleo-gray-400: #a3a3a3;
+  --eleo-gray-500: #737373;
+  --eleo-gray-600: #4b4f58;
+  --eleo-gray-700: #3a3a3a;
+  --eleo-gray-800: #262626;
+  --eleo-gray-900: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter), "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+
+  /* Override Tailwind cyan-* tokens to map to Eleo blue.
+     This rebrand the entire app (cyan-500 → #0170B9) without touching
+     individual files, while keeping semantic color classes (red, amber,
+     emerald, slate) functional. */
+  --color-cyan-50:  var(--eleo-50);
+  --color-cyan-100: var(--eleo-100);
+  --color-cyan-200: var(--eleo-200);
+  --color-cyan-300: var(--eleo-300);
+  --color-cyan-400: var(--eleo-400);
+  --color-cyan-500: var(--eleo-500);
+  --color-cyan-600: var(--eleo-600);
+  --color-cyan-700: var(--eleo-700);
+  --color-cyan-800: var(--eleo-800);
+  --color-cyan-900: var(--eleo-900);
+
+  /* Override Tailwind orange-* tokens to map to Eleo orange */
+  --color-orange-50:  var(--eleo-orange-50);
+  --color-orange-100: var(--eleo-orange-100);
+  --color-orange-200: var(--eleo-orange-200);
+  --color-orange-300: var(--eleo-orange-300);
+  --color-orange-400: var(--eleo-orange-400);
+  --color-orange-500: var(--eleo-orange-500);
+  --color-orange-600: var(--eleo-orange-600);
+  --color-orange-700: var(--eleo-orange-700);
+  --color-orange-800: var(--eleo-orange-800);
+  --color-orange-900: var(--eleo-orange-900);
+
+  /* Custom eleo-orange-* utilities */
+  --color-eleo-orange-50:  var(--eleo-orange-50);
+  --color-eleo-orange-100: var(--eleo-orange-100);
+  --color-eleo-orange-200: var(--eleo-orange-200);
+  --color-eleo-orange-300: var(--eleo-orange-300);
+  --color-eleo-orange-400: var(--eleo-orange-400);
+  --color-eleo-orange-500: var(--eleo-orange-500);
+  --color-eleo-orange-600: var(--eleo-orange-600);
+  --color-eleo-orange-700: var(--eleo-orange-700);
+  --color-eleo-orange-800: var(--eleo-orange-800);
+  --color-eleo-orange-900: var(--eleo-orange-900);
+
+  /* Custom eleo-* utilities (eleo-500, eleo-600, etc.) */
+  --color-eleo-50:  var(--eleo-50);
+  --color-eleo-100: var(--eleo-100);
+  --color-eleo-200: var(--eleo-200);
+  --color-eleo-300: var(--eleo-300);
+  --color-eleo-400: var(--eleo-400);
+  --color-eleo-500: var(--eleo-500);
+  --color-eleo-600: var(--eleo-600);
+  --color-eleo-700: var(--eleo-700);
+  --color-eleo-800: var(--eleo-800);
+  --color-eleo-900: var(--eleo-900);
+
+  /* Custom eleo-gray-* utilities (CRITIQUE : sans ces déclarations,
+     les classes text-eleo-gray-*, bg-eleo-gray-*, border-eleo-gray-*
+     ne sont PAS générées par Tailwind v4). */
+  --color-eleo-gray-50:  var(--eleo-gray-50);
+  --color-eleo-gray-100: var(--eleo-gray-100);
+  --color-eleo-gray-200: var(--eleo-gray-200);
+  --color-eleo-gray-300: var(--eleo-gray-300);
+  --color-eleo-gray-400: var(--eleo-gray-400);
+  --color-eleo-gray-500: var(--eleo-gray-500);
+  --color-eleo-gray-600: var(--eleo-gray-600);
+  --color-eleo-gray-700: var(--eleo-gray-700);
+  --color-eleo-gray-800: var(--eleo-gray-800);
+  --color-eleo-gray-900: var(--eleo-gray-900);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Subtle Eleo touch on focus states */
+*:focus-visible {
+  outline: 2px solid var(--eleo-500);
+  outline-offset: 2px;
+}
+
+/* Selection */
+::selection {
+  background: var(--eleo-100);
+  color: var(--eleo-800);
+}
