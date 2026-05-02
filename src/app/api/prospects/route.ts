@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { REFUSED_FUNDING_MODES } from "@/config/company";
+import { COMPANY, REFUSED_FUNDING_MODES, FUNDING_MODES, PROSPECT_STATUSES } from "@/config/company";
 import { getSession } from "@/lib/auth";
+import { sendEmail, emailTemplate, escapeHtml, NOTIFICATION_EMAIL } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -99,6 +100,88 @@ export async function POST(request: NextRequest) {
         source: "SITE",
       },
     });
+
+    // Notifications email (non bloquant : on ne fait pas échouer la requête si l'email plante)
+    const statusLabel =
+      (PROSPECT_STATUSES as Record<string, string>)[status] || status;
+    const fundingLabel =
+      (FUNDING_MODES as Record<string, string>)[fundingMode] || fundingMode;
+    const badge = autoRefused
+      ? `<span style="display:inline-block;padding:2px 8px;background:#fee2e2;color:#991b1b;border-radius:4px;font-size:12px;font-weight:600;">REFUS AUTO</span>`
+      : `<span style="display:inline-block;padding:2px 8px;background:#dcfce7;color:#166534;border-radius:4px;font-size:12px;font-weight:600;">NOUVEAU</span>`;
+
+    const rows = [
+      ["Nom", `${escapeHtml(firstName)} ${escapeHtml(lastName)}`],
+      ["Email", `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>`],
+      phone ? ["Téléphone", `<a href="tel:${escapeHtml(phone)}">${escapeHtml(phone)}</a>`] : null,
+      companyName ? ["Entreprise", escapeHtml(companyName)] : null,
+      companySiret ? ["SIRET", escapeHtml(companySiret)] : null,
+      formationTitle ? ["Formation souhaitée", escapeHtml(formationTitle)] : null,
+      currentLevel ? ["Niveau actuel", escapeHtml(currentLevel)] : null,
+      preferredFormat ? ["Format préféré", escapeHtml(preferredFormat)] : null,
+      idealDelay ? ["Délai souhaité", escapeHtml(idealDelay)] : null,
+      professionalGoal ? ["Objectif pro", escapeHtml(professionalGoal)] : null,
+      ["Financement", escapeHtml(fundingLabel)],
+      ["Statut", `${escapeHtml(statusLabel)} ${badge}`],
+      refusalReason ? ["Raison refus", escapeHtml(refusalReason)] : null,
+      message ? ["Message", escapeHtml(message).replace(/\n/g, "<br>")] : null,
+    ].filter(Boolean) as [string, string][];
+
+    const tableRows = rows
+      .map(
+        ([k, v]) =>
+          `<tr><td style="padding:8px 12px;background:#f3f4f6;font-weight:600;width:140px;vertical-align:top;">${k}</td><td style="padding:8px 12px;background:#ffffff;border-top:1px solid #e5e7eb;">${v}</td></tr>`,
+      )
+      .join("");
+
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL || "https://formation.eleo-informatique.fr";
+
+    // 1. Notification interne (vers NOTIFICATION_EMAIL = eleo.informatique@gmail.com)
+    const notifSubject = autoRefused
+      ? `[Eleo Formation] Demande refusée automatiquement — ${firstName} ${lastName}`
+      : `[Eleo Formation] Nouvelle demande de devis — ${firstName} ${lastName}`;
+
+    sendEmail({
+      to: NOTIFICATION_EMAIL,
+      replyTo: email,
+      subject: notifSubject,
+      html: emailTemplate({
+        title: autoRefused
+          ? "Demande refusée automatiquement"
+          : "Nouvelle demande reçue",
+        bodyHtml: `
+          <p>Une nouvelle demande vient d'être soumise via la plateforme.</p>
+          <table cellpadding="0" cellspacing="0" style="width:100%;border-radius:6px;overflow:hidden;margin-top:12px;">
+            ${tableRows}
+          </table>
+        `,
+        ctaLabel: "Voir dans le CRM",
+        ctaUrl: `${appUrl}/admin/crm`,
+        footerNote: autoRefused
+          ? "Cette demande a été automatiquement refusée selon les règles Qualiopi (stage/alternance/immersion gratuite/candidature emploi)."
+          : undefined,
+      }),
+    }).catch(() => undefined);
+
+    // 2. Accusé de réception au prospect (sauf si refus auto : on envoie une réponse personnalisée)
+    if (!autoRefused) {
+      sendEmail({
+        to: email,
+        subject: `Votre demande — ${COMPANY.brandName}`,
+        html: emailTemplate({
+          title: `Bonjour ${escapeHtml(firstName)},`,
+          bodyHtml: `
+            <p>Nous avons bien reçu votre demande concernant${formationTitle ? ` la formation <strong>${escapeHtml(formationTitle)}</strong>` : " une formation"}.</p>
+            <p>Notre équipe vous recontacte sous <strong>48 heures ouvrées</strong> pour préparer un devis adapté à votre projet et à votre mode de financement (<em>${escapeHtml(fundingLabel)}</em>).</p>
+            <p>En attendant, vous pouvez consulter notre catalogue de formations ou nous contacter directement au <strong>${COMPANY.phone}</strong>.</p>
+          `,
+          ctaLabel: "Voir notre catalogue",
+          ctaUrl: `${appUrl}/formations`,
+          footerNote: "Cet email est automatique, merci de ne pas y répondre directement. Pour nous contacter, utilisez l'adresse email ou le téléphone ci-dessus.",
+        }),
+      }).catch(() => undefined);
+    }
 
     return NextResponse.json({ prospect, autoRefused });
   } catch (error) {
