@@ -45,7 +45,11 @@ next-env.d.ts
 # fichiers temporaires d'analyse WordPress (contiennent des données du site live)
 wp-page-*.json
 wp-page-*.html
+wp-find-*.html
 wp-elementor-*.json
+
+# scripts PowerShell d'analyse ad-hoc
+scripts/find-*.ps1
 
 # base SQLite locale (legacy)
 *.db
