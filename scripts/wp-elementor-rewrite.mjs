@@ -181,6 +181,18 @@ function applyRewrites(node, log) {
           is_external: "true",
           nofollow: "",
         };
+        // IMPORTANT : supprimer le dynamic tag popup qui écrase link.url
+        if (settings.__dynamic__ && settings.__dynamic__.link) {
+          log.push({
+            id: node.id,
+            type: "button.dynamic.removed",
+            from: settings.__dynamic__.link.substring(0, 50) + "…",
+            to: "(supprimé)",
+          });
+          const dyn = { ...settings.__dynamic__ };
+          delete dyn.link;
+          settings.__dynamic__ = Object.keys(dyn).length ? dyn : undefined;
+        }
       }
     }
     node = { ...node, settings };
