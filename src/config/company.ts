@@ -11,7 +11,7 @@ export const COMPANY = {
   siret: "87773553000017",
   tvaIntra: "FR79877735530",
   fullAddress: "49 Avenue Henri Malacrida, 13100 Aix-en-Provence",
-  website: "https://eleo-formation.fr",
+  website: "https://formation.eleo-informatique.fr",
 } as const;
 
 export const LEGAL_DISCLAIMER =

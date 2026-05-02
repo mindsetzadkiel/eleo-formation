@@ -172,7 +172,7 @@ class OpenRouterProvider implements AIProvider {
     this.primaryModel = process.env.OPENROUTER_MODEL || "meta-llama/llama-3.3-70b-instruct:free";
     this.fallbackModels = (process.env.OPENROUTER_FALLBACK_MODELS || "google/gemini-2.0-flash-exp:free,deepseek/deepseek-r1:free")
       .split(",").map((s) => s.trim()).filter(Boolean);
-    this.siteUrl = process.env.OPENROUTER_SITE_URL || "https://eleo-informatique.fr";
+    this.siteUrl = process.env.OPENROUTER_SITE_URL || "https://formation.eleo-informatique.fr";
     this.appName = process.env.OPENROUTER_APP_NAME || "Eleo Formation";
   }
 
