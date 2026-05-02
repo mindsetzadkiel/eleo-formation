@@ -8,7 +8,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Modal } from "@/components/ui/modal";
 import { formatCurrency } from "@/lib/utils";
-import { Plus, Edit2, Trash2, Eye } from "lucide-react";
+import { Plus, Edit2, Trash2, Eye, BookOpen } from "lucide-react";
 import Link from "next/link";
 
 interface Formation {
@@ -211,10 +211,22 @@ export default function FormationsAdminPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 ml-4">
-                  <Link href={`/formations/${f.slug}`} target="_blank" className="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700">
+                  <Link
+                    href={`/admin/formations/${f.slug}/preview`}
+                    className="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700"
+                    title="Prévisualiser le contenu complet"
+                  >
+                    <BookOpen className="w-4 h-4 text-slate-500" />
+                  </Link>
+                  <Link
+                    href={`/formations/${f.slug}`}
+                    target="_blank"
+                    className="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700"
+                    title="Voir la page publique"
+                  >
                     <Eye className="w-4 h-4 text-slate-500" />
                   </Link>
-                  <button onClick={() => openEdit(f)} className="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700">
+                  <button onClick={() => openEdit(f)} className="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700" title="Modifier">
                     <Edit2 className="w-4 h-4 text-slate-500" />
                   </button>
                   <button onClick={() => handleDelete(f.id)} className="p-2 rounded hover:bg-red-50 dark:hover:bg-red-900/20">
