@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Modal } from "@/components/ui/modal";
-import { Plus, Eye } from "lucide-react";
+import { Plus, Eye, FileDown } from "lucide-react";
 
 interface Learner {
   id: string;
@@ -18,6 +18,7 @@ interface Learner {
   user: { firstName: string; lastName: string; email: string; phone: string | null; active: boolean };
   company: { name: string } | null;
   enrollments: Array<{
+    id: string;
     status: string;
     session: { formation: { title: string } };
   }>;
@@ -189,7 +190,17 @@ export default function ApprenantsPage() {
                   {selected.enrollments.map((e, i) => (
                     <li key={i} className="flex items-center gap-2">
                       <Badge variant={e.status === "TERMINE" ? "success" : "info"}>{e.status}</Badge>
-                      {e.session.formation.title}
+                      <span className="flex-1">{e.session.formation.title}</span>
+                      <a
+                        href={`/api/suivi/${selected.id}/${e.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs px-2 py-1 bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 rounded hover:bg-cyan-100"
+                        title="Télécharger la fiche de suivi PDF (Qualiopi C3-I8)"
+                      >
+                        <FileDown className="w-3 h-3" />
+                        Fiche suivi
+                      </a>
                     </li>
                   ))}
                 </ul>

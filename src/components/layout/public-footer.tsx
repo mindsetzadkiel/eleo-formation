@@ -44,8 +44,10 @@ export function PublicFooter() {
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-white mb-4">Informations légales</h3>
+            <h3 className="text-sm font-semibold text-white mb-4">Qualité & légal</h3>
             <ul className="space-y-2 text-sm">
+              <li><Link href="/qualite" className="text-eleo-gray-200 hover:text-eleo-300 transition-colors">Indicateurs qualité</Link></li>
+              <li><Link href="/reclamation" className="text-eleo-gray-200 hover:text-eleo-300 transition-colors">Faire une réclamation</Link></li>
               <li><Link href="/mentions-legales" className="text-eleo-gray-200 hover:text-eleo-300 transition-colors">Mentions légales</Link></li>
               <li><Link href="/politique-confidentialite" className="text-eleo-gray-200 hover:text-eleo-300 transition-colors">Politique de confidentialité</Link></li>
             </ul>
