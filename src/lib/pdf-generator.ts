@@ -605,6 +605,144 @@ export async function generateReglementInterieurPDF(data: {
   return pdf.save();
 }
 
+export async function generateLearnerProgressPDF(data: {
+  learnerName: string;
+  learnerEmail: string;
+  formationTitle: string;
+  startDate: string;
+  endDate: string;
+  duration: number;
+  completedLessons: number;
+  totalLessons: number;
+  progressPercent: number;
+  modules: Array<{
+    title: string;
+    orderIndex: number;
+    completed: number;
+    total: number;
+    bestQuizScore?: number | null;
+    lessons: Array<{ title: string; completed: boolean; completedAt?: string | null }>;
+  }>;
+  quizAttempts: Array<{ title: string; module: string; scorePct: number | null; passed: boolean; date: string }>;
+  trainerNotes?: string;
+  date: string;
+}): Promise<Uint8Array> {
+  const { pdf, font, fontBold } = await createBasePdf();
+  let page = pdf.addPage([595, 842]);
+  let y = addHeader(page, fontBold, font, "Fiche de suivi de l'apprenant");
+
+  page.drawText(`Apprenant : ${data.learnerName}`, { x: 50, y, size: 10, font: fontBold, color: COLORS.dark });
+  y -= 14;
+  page.drawText(`Email : ${data.learnerEmail}`, { x: 50, y, size: 9, font, color: COLORS.gray });
+  y -= 14;
+  page.drawText(`Formation : ${data.formationTitle}`, { x: 50, y, size: 9, font: fontBold, color: COLORS.dark });
+  y -= 14;
+  page.drawText(`Période : du ${data.startDate} au ${data.endDate} — ${data.duration}h`, { x: 50, y, size: 9, font, color: COLORS.gray });
+  y -= 22;
+
+  // Progression globale
+  page.drawText(`Progression globale : ${data.progressPercent}%`, { x: 50, y, size: 12, font: fontBold, color: COLORS.primary });
+  y -= 14;
+  page.drawText(`${data.completedLessons}/${data.totalLessons} leçons terminées`, { x: 50, y, size: 9, font, color: COLORS.gray });
+  y -= 18;
+
+  // Barre de progression
+  page.drawRectangle({ x: 50, y, width: 495, height: 8, color: COLORS.lightGray });
+  page.drawRectangle({ x: 50, y, width: Math.max(2, (495 * data.progressPercent) / 100), height: 8, color: COLORS.primary });
+  y -= 22;
+
+  // Détail par module
+  page.drawText("Détail par module", { x: 50, y, size: 11, font: fontBold, color: COLORS.dark });
+  y -= 16;
+
+  for (const m of data.modules) {
+    if (y < 130) {
+      addFooter(page, font, 1, 1);
+      page = pdf.addPage([595, 842]);
+      y = addHeader(page, fontBold, font, "Fiche de suivi (suite)");
+    }
+    const modPct = m.total > 0 ? Math.round((m.completed / m.total) * 100) : 0;
+    page.drawText(`Module ${m.orderIndex} — ${m.title}`, { x: 50, y, size: 9, font: fontBold, color: COLORS.dark });
+    y -= 13;
+    const subline = `${m.completed}/${m.total} leçons (${modPct}%)${m.bestQuizScore != null ? ` · meilleur quiz : ${Math.round(m.bestQuizScore)}%` : ""}`;
+    page.drawText(subline, { x: 60, y, size: 8, font, color: COLORS.gray });
+    y -= 12;
+
+    for (const l of m.lessons) {
+      if (y < 80) {
+        addFooter(page, font, 1, 1);
+        page = pdf.addPage([595, 842]);
+        y = addHeader(page, fontBold, font, "Fiche de suivi (suite)");
+      }
+      const mark = l.completed ? "✓" : "○";
+      const dateStr = l.completed && l.completedAt ? `  (${l.completedAt})` : "";
+      page.drawText(`  ${mark} ${l.title}${dateStr}`, { x: 60, y, size: 8, font, color: l.completed ? COLORS.dark : COLORS.gray });
+      y -= 10;
+    }
+    y -= 6;
+  }
+
+  // Quiz attempts
+  if (data.quizAttempts.length > 0) {
+    if (y < 130) {
+      addFooter(page, font, 1, 1);
+      page = pdf.addPage([595, 842]);
+      y = addHeader(page, fontBold, font, "Fiche de suivi (suite)");
+    }
+    page.drawText("Évaluations passées", { x: 50, y, size: 11, font: fontBold, color: COLORS.dark });
+    y -= 16;
+
+    for (const qa of data.quizAttempts) {
+      if (y < 80) {
+        addFooter(page, font, 1, 1);
+        page = pdf.addPage([595, 842]);
+        y = addHeader(page, fontBold, font, "Fiche de suivi (suite)");
+      }
+      const status = qa.passed ? "VALIDE" : qa.scorePct != null ? `${qa.scorePct}%` : "—";
+      const line = `• ${qa.date} — ${qa.module} — ${qa.title} : ${status}`;
+      page.drawText(line, { x: 50, y, size: 9, font, color: COLORS.dark });
+      y -= 13;
+    }
+    y -= 6;
+  }
+
+  // Notes formateur
+  if (data.trainerNotes) {
+    if (y < 130) {
+      addFooter(page, font, 1, 1);
+      page = pdf.addPage([595, 842]);
+      y = addHeader(page, fontBold, font, "Fiche de suivi (suite)");
+    }
+    page.drawText("Notes du formateur", { x: 50, y, size: 11, font: fontBold, color: COLORS.dark });
+    y -= 16;
+    const wrapped = wrapText(data.trainerNotes, font, 9, 480);
+    for (const line of wrapped) {
+      if (y < 80) {
+        addFooter(page, font, 1, 1);
+        page = pdf.addPage([595, 842]);
+        y = addHeader(page, fontBold, font, "Fiche de suivi (suite)");
+      }
+      page.drawText(line, { x: 50, y, size: 9, font, color: COLORS.dark });
+      y -= 12;
+    }
+  }
+
+  // Signatures
+  if (y < 100) {
+    addFooter(page, font, 1, 1);
+    page = pdf.addPage([595, 842]);
+    y = addHeader(page, fontBold, font, "Fiche de suivi (suite)");
+  }
+  y -= 20;
+  page.drawText(`Fait à ${COMPANY.city}, le ${data.date}`, { x: 50, y, size: 9, font, color: COLORS.dark });
+  y -= 25;
+  page.drawText("Signature formateur :", { x: 50, y, size: 8, font, color: COLORS.gray });
+  page.drawText("Signature apprenant :", { x: 350, y, size: 8, font, color: COLORS.gray });
+
+  addFooter(page, font, 1, 1);
+  return pdf.save();
+}
+
 export async function generatePositioningPDF(data: {
   formationTitle: string;
   questions: Array<{ orderIndex: number; question: string; type: string }>;
