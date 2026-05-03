@@ -9,6 +9,8 @@ import {
   generateCertificatPDF,
   generateSatisfactionPDF,
   generateConvocationPDF,
+  generateReglementInterieurPDF,
+  generatePositioningPDF,
 } from "@/lib/pdf-generator";
 
 export async function POST(
@@ -59,6 +61,14 @@ export async function POST(
       case "convocation":
         pdfBytes = await generateConvocationPDF(body);
         filename = `convocation-${Date.now()}.pdf`;
+        break;
+      case "reglement":
+        pdfBytes = await generateReglementInterieurPDF(body);
+        filename = `reglement-interieur-v${body.version || "1.0"}.pdf`;
+        break;
+      case "positionnement":
+        pdfBytes = await generatePositioningPDF(body);
+        filename = `positionnement-${Date.now()}.pdf`;
         break;
       default:
         return NextResponse.json({ error: "Type de PDF inconnu" }, { status: 400 });

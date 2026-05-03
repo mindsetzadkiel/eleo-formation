@@ -402,6 +402,117 @@ model AIConversation {
   user      User @relation(fields: [userId], references: [id])
 }
 
+// ─── REGLEMENT INTERIEUR (Qualiopi & DREETS) ────────────────────
+
+model RegulationDocument {
+  id          String   @id @default(cuid())
+  version     String   // ex: "1.0", "1.1"
+  title       String   @default("Règlement intérieur des stagiaires")
+  content     String   // markdown
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── POSITIONNEMENT PRE-FORMATION (Critere 3 - Indicateur 7) ────
+
+model PositioningQuestion {
+  id           String   @id @default(cuid())
+  formationId  String?  // null = generique
+  orderIndex   Int
+  question     String
+  type         String   @default("OPEN") // OPEN, MCQ, SCALE_1_5, YES_NO
+  options      String?  // JSON array pour MCQ
+  required     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  responses    PositioningAnswer[]
+}
+
+model PositioningResponse {
+  id            String   @id @default(cuid())
+  learnerId     String
+  formationId   String
+  enrollmentId  String?
+  submittedAt   DateTime @default(now())
+  analyzed      Boolean  @default(false)
+  trainerNotes  String?
+
+  answers       PositioningAnswer[]
+}
+
+model PositioningAnswer {
+  id          String   @id @default(cuid())
+  responseId  String
+  questionId  String
+  answer      String
+
+  response    PositioningResponse  @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  question    PositioningQuestion  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+// ─── SATISFACTION (Critere 7 - Indicateur 30, 31) ───────────────
+
+model SatisfactionResponse {
+  id           String   @id @default(cuid())
+  learnerId    String
+  formationId  String
+  enrollmentId String?
+  type         String   // CHAUD, FROID
+  rating       Float?   // moyenne /5
+  comments     String?
+  recommend    Boolean?
+  submittedAt  DateTime @default(now())
+  raw          String   // JSON {questionLabel: answer}
+}
+
+// ─── REGISTRE DES RECLAMATIONS (Critere 7 - Indicateur 30) ──────
+
+model Complaint {
+  id              String   @id @default(cuid())
+  reporterName    String
+  reporterEmail   String
+  reporterRole    String   // APPRENANT, ENTREPRISE, FORMATEUR, AUTRE
+  formationId     String?
+  category        String   // ORGANISATION, CONTENU, ACCESSIBILITE, FACTURATION, AUTRE
+  severity        String   @default("MOYENNE") // FAIBLE, MOYENNE, ELEVEE, CRITIQUE
+  description     String
+  status          String   @default("OUVERT") // OUVERT, EN_TRAITEMENT, RESOLU, CLOS
+  resolution      String?
+  rootCause       String?
+  preventiveAction String?
+  createdAt       DateTime @default(now())
+  resolvedAt      DateTime?
+  closedAt        DateTime?
+}
+
+// ─── BPF (Bilan Pedagogique et Financier annuel) ────────────────
+
+model BPFEntry {
+  id            String   @id @default(cuid())
+  year          Int      @unique
+  // Activite
+  totalRevenue        Float    @default(0)
+  trainingRevenue     Float    @default(0)
+  publicFunding       Float    @default(0)
+  privateFunding      Float    @default(0)
+  selfFunding         Float    @default(0)
+  // Volume
+  totalLearners       Int      @default(0)
+  totalStagiairesH    Int      @default(0)
+  totalSessions       Int      @default(0)
+  // Personnel
+  internalTrainers    Int      @default(0)
+  externalTrainers    Int      @default(0)
+  // Status
+  declared            Boolean  @default(false)
+  declaredAt          DateTime?
+  notes               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
 // ─── AUDIT LOG ──────────────────────────────────────────────────
 
 model AuditLog {

@@ -544,6 +544,121 @@ export async function generateSatisfactionPDF(data: {
   return pdf.save();
 }
 
+export async function generateReglementInterieurPDF(data: {
+  version: string;
+  title: string;
+  content: string; // markdown simple — on rend en texte avec mise en forme heuristique
+  date: string;
+}): Promise<Uint8Array> {
+  const { pdf, font, fontBold } = await createBasePdf();
+  let page = pdf.addPage([595, 842]);
+  let y = addHeader(page, fontBold, font, data.title);
+
+  page.drawText(`Version ${data.version} — ${data.date}`, { x: 50, y, size: 9, font, color: COLORS.gray });
+  y -= 25;
+
+  // Parser markdown rudimentaire (## titres, paragraphes, puces)
+  const lines = data.content.split(/\r?\n/);
+  for (const raw of lines) {
+    if (y < 90) {
+      addFooter(page, font, 1, 1);
+      page = pdf.addPage([595, 842]);
+      y = addHeader(page, fontBold, font, data.title);
+    }
+    const line = raw.trim();
+    if (!line) { y -= 8; continue; }
+    if (line.startsWith("## ")) {
+      y -= 6;
+      page.drawText(line.replace(/^##\s*/, ""), { x: 50, y, size: 11, font: fontBold, color: COLORS.primary });
+      y -= 16;
+      continue;
+    }
+    if (line.startsWith("# ")) {
+      y -= 6;
+      page.drawText(line.replace(/^#\s*/, ""), { x: 50, y, size: 13, font: fontBold, color: COLORS.dark });
+      y -= 18;
+      continue;
+    }
+    const isBullet = /^[-*•]\s+/.test(line);
+    const text = isBullet ? line.replace(/^[-*•]\s+/, "") : line;
+    const wrapped = wrapText(text, font, 9, isBullet ? 460 : 480);
+    for (let i = 0; i < wrapped.length; i++) {
+      if (y < 80) {
+        addFooter(page, font, 1, 1);
+        page = pdf.addPage([595, 842]);
+        y = addHeader(page, fontBold, font, data.title);
+      }
+      const prefix = isBullet && i === 0 ? "• " : "";
+      page.drawText(prefix + wrapped[i], {
+        x: isBullet ? 60 : 50,
+        y,
+        size: 9,
+        font,
+        color: COLORS.dark,
+      });
+      y -= 13;
+    }
+    y -= 3;
+  }
+
+  addFooter(page, font, 1, 1);
+  return pdf.save();
+}
+
+export async function generatePositioningPDF(data: {
+  formationTitle: string;
+  questions: Array<{ orderIndex: number; question: string; type: string }>;
+  date: string;
+}): Promise<Uint8Array> {
+  const { pdf, font, fontBold } = await createBasePdf();
+  let page = pdf.addPage([595, 842]);
+  let y = addHeader(page, fontBold, font, "Questionnaire de positionnement");
+
+  page.drawText(`Formation : ${data.formationTitle}`, { x: 50, y, size: 9, font: fontBold, color: COLORS.dark });
+  y -= 14;
+  page.drawText(`Date : ${data.date}`, { x: 50, y, size: 9, font, color: COLORS.gray });
+  y -= 14;
+  page.drawText("À remplir avant le démarrage de la formation pour adapter le parcours à votre niveau et vos attentes.", {
+    x: 50, y, size: 8, font, color: COLORS.gray,
+  });
+  y -= 22;
+
+  page.drawText("Identité de l'apprenant", { x: 50, y, size: 10, font: fontBold, color: COLORS.primary });
+  y -= 16;
+  page.drawText("Nom, prénom : ____________________________________________", { x: 50, y, size: 9, font, color: COLORS.dark });
+  y -= 14;
+  page.drawText("Email / Téléphone : _______________________________________", { x: 50, y, size: 9, font, color: COLORS.dark });
+  y -= 22;
+
+  for (const q of data.questions) {
+    if (y < 100) {
+      addFooter(page, font, 1, 1);
+      page = pdf.addPage([595, 842]);
+      y = addHeader(page, fontBold, font, "Questionnaire de positionnement (suite)");
+    }
+    const wrapped = wrapText(`${q.orderIndex}. ${q.question}`, font, 9, 480);
+    for (const line of wrapped) {
+      page.drawText(line, { x: 50, y, size: 9, font: fontBold, color: COLORS.dark });
+      y -= 13;
+    }
+    if (q.type === "SCALE_1_5") {
+      page.drawText("1  ☐    2  ☐    3  ☐    4  ☐    5  ☐", { x: 70, y, size: 9, font, color: COLORS.gray });
+      y -= 18;
+    } else if (q.type === "YES_NO") {
+      page.drawText("☐ Oui    ☐ Non", { x: 70, y, size: 9, font, color: COLORS.gray });
+      y -= 18;
+    } else {
+      // Espace de réponse libre
+      page.drawRectangle({ x: 50, y: y - 35, width: 495, height: 38, borderColor: COLORS.lightGray, borderWidth: 1, color: COLORS.white });
+      y -= 45;
+    }
+    y -= 4;
+  }
+
+  addFooter(page, font, 1, 1);
+  return pdf.save();
+}
+
 export async function generateConvocationPDF(data: {
   learnerName: string;
   formationTitle: string;

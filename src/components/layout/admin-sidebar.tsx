@@ -12,11 +12,16 @@ import {
   UserCheck,
   FileText,
   ClipboardCheck,
+  ClipboardList,
   Bot,
   Mail,
   LogOut,
   Monitor,
   Wrench,
+  MessageSquareWarning,
+  TrendingUp,
+  FileSpreadsheet,
+  ScrollText,
 } from "lucide-react";
 
 const menuItems = [
@@ -28,6 +33,11 @@ const menuItems = [
   { href: "/admin/crm", label: "CRM Prospects", icon: UserCheck },
   { href: "/admin/opco", label: "Dossiers OPCO", icon: FileText },
   { href: "/admin/qualiopi", label: "Cockpit Qualiopi", icon: ClipboardCheck },
+  { href: "/admin/positionnement", label: "Positionnement", icon: ClipboardList },
+  { href: "/admin/reclamations", label: "Réclamations", icon: MessageSquareWarning },
+  { href: "/admin/reglement", label: "Règlement intérieur", icon: ScrollText },
+  { href: "/admin/indicateurs", label: "Indicateurs résultats", icon: TrendingUp },
+  { href: "/admin/bpf", label: "BPF annuel", icon: FileSpreadsheet },
   { href: "/admin/ateliers", label: "Ateliers", icon: Wrench },
   { href: "/admin/emails", label: "Modèles emails", icon: Mail },
   { href: "/admin/assistant", label: "Assistant IA", icon: Bot },
