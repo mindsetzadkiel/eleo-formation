@@ -7,7 +7,8 @@ import { Select } from "@/components/ui/select";
 import { Modal } from "@/components/ui/modal";
 import { LEGAL_DISCLAIMER } from "@/config/company";
 import { formatDate } from "@/lib/utils";
-import { Plus, FileDown, AlertTriangle } from "lucide-react";
+import { Plus, FileDown, AlertTriangle, Eye, FileText } from "lucide-react";
+import { LessonMarkdown } from "@/components/lesson-markdown";
 
 interface OPCODoc {
   id: string;
@@ -67,6 +68,7 @@ export default function OPCOPage() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [formData, setFormData] = useState({ formationId: "", companyId: "", type: "DEVIS" });
+  const [viewingDoc, setViewingDoc] = useState<OPCODoc | null>(null);
 
   useEffect(() => {
     fetchAll();
@@ -219,6 +221,15 @@ export default function OPCOPage() {
                     <td className="px-4 py-3 text-slate-500 text-xs">{formatDate(doc.createdAt)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
+                        {doc.remarks && doc.remarks.length > 300 && (
+                          <button
+                            onClick={() => setViewingDoc(doc)}
+                            className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700"
+                            title="Voir le template IA"
+                          >
+                            <FileText className="w-4 h-4 text-cyan-600" />
+                          </button>
+                        )}
                         <button onClick={() => generatePDF(doc)} className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700" title="Générer PDF">
                           <FileDown className="w-4 h-4 text-cyan-600" />
                         </button>
@@ -254,6 +265,34 @@ export default function OPCOPage() {
             <Button type="submit">Créer</Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        isOpen={!!viewingDoc}
+        onClose={() => setViewingDoc(null)}
+        title={viewingDoc ? `${docTypes.find((t) => t.value === viewingDoc.type)?.label || viewingDoc.type} — ${viewingDoc.formation.title}` : ""}
+        size="xl"
+      >
+        {viewingDoc?.remarks ? (
+          <div className="max-h-[70vh] overflow-y-auto">
+            <div className="mb-3 flex items-center justify-between text-xs text-slate-500">
+              <span>Template généré par IA - {viewingDoc.remarks.length} caractères</span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(viewingDoc.remarks || "");
+                }}
+                className="text-cyan-600 hover:text-cyan-700"
+              >
+                Copier le markdown
+              </button>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-6 border border-slate-200">
+              <LessonMarkdown content={viewingDoc.remarks} />
+            </div>
+          </div>
+        ) : (
+          <p className="text-slate-500">Aucun contenu. Générez le template via le script IA.</p>
+        )}
       </Modal>
     </div>
   );

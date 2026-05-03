@@ -51,7 +51,7 @@ async function callOpenRouter(messages) {
           model,
           messages,
           temperature: 0.7,
-          max_tokens: 2500,
+          max_tokens: 4000,
         }),
       });
       if (!res.ok) {
@@ -116,13 +116,16 @@ lesson.type === "CASE_STUDY" ? `- Structure d'étude de cas en 4 parties :
   3. **En pratique** (exemples concrets du métier de technicien, pièges courants)
   4. **À retenir** (3-5 points à mémoriser)`}
 
-- Longueur : **entre 1800 et 2800 caractères** (sans compter les espaces superflus)
-- Format : **markdown** (titres ##, listes -, **gras** pour les termes importants, \`code\` pour commandes/fichiers)
+- Longueur : **entre 4000 et 5000 caractères** (contenu détaillé et substantiel, pas de remplissage)
+- Format : **markdown** (titres ##, sous-titres ###, listes -, **gras** pour les termes importants, \`code\` pour commandes/fichiers)
 - Ton : direct, tutoyer possible, exemples français (clients PME, logiciels français, etc.)
-- Inclure **au moins 2 exemples concrets** du terrain
+- Inclure **au moins 3-4 exemples concrets et diversifiés** du terrain
+- Inclure **des commandes, raccourcis, captures texte ou noms de logiciels précis** que le technicien utilisera vraiment
+- Inclure **des pièges courants** (section dédiée) avec exemples réels
+- Inclure **un mini-récap "À retenir"** avec 5-7 points clés
 - Ne pas reprendre le titre de la leçon en début de texte
 - Ne pas mettre de "avertissement IA" ni de signature
-- Ne pas dépasser 2800 caractères
+- Densité : chaque paragraphe doit apporter une information utile, pas de généralités
 
 Rends uniquement le contenu markdown de la leçon, rien d'autre.`;
 

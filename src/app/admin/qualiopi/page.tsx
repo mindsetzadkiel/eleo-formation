@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { LEGAL_DISCLAIMER } from "@/config/company";
 import { formatDate } from "@/lib/utils";
-import { ClipboardCheck, AlertTriangle, CheckCircle2, Clock, CircleDot } from "lucide-react";
+import { ClipboardCheck, AlertTriangle, CheckCircle2, Clock, CircleDot, ChevronDown, ChevronRight, FileText } from "lucide-react";
+import { LessonMarkdown } from "@/components/lesson-markdown";
 
 interface QualiopiItem {
   id: string;
@@ -36,8 +37,11 @@ const statusOptions = [
 export default function QualiopiPage() {
   const [criteria, setCriteria] = useState<QualiopiCriterion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   useEffect(() => { fetchCriteria(); }, []);
+
+  const toggleExpand = (id: string) => setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
 
   async function fetchCriteria() {
     try {
@@ -128,31 +132,62 @@ export default function QualiopiPage() {
                   <p className="text-sm text-slate-500 mt-1">{criterion.description}</p>
                 </div>
                 <div className="divide-y divide-slate-100 dark:divide-slate-700/50">
-                  {criterion.items.map((item) => (
-                    <div key={item.id} className="px-6 py-3 flex items-center gap-4">
-                      {statusIcon(item.status)}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-900 dark:text-white">{item.label}</p>
-                        {item.description && <p className="text-xs text-slate-500 mt-0.5">{item.description}</p>}
-                        {item.comments && <p className="text-xs text-cyan-600 mt-0.5">Note : {item.comments}</p>}
-                        <p className="text-xs text-slate-400 mt-0.5">Mis à jour : {formatDate(item.lastUpdated)}</p>
+                  {criterion.items.map((item) => {
+                    const hasDetailedPlan = item.comments && item.comments.length > 500;
+                    const isExpanded = expanded[item.id];
+                    return (
+                      <div key={item.id} className="flex flex-col">
+                        <div className="px-6 py-3 flex items-center gap-4">
+                          {statusIcon(item.status)}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium text-slate-900 dark:text-white">{item.label}</p>
+                              {hasDetailedPlan && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-cyan-50 text-cyan-600 border border-cyan-200">
+                                  <FileText className="w-3 h-3" /> Plan d&apos;action IA
+                                </span>
+                              )}
+                            </div>
+                            {item.description && <p className="text-xs text-slate-500 mt-0.5">{item.description}</p>}
+                            {item.comments && !hasDetailedPlan && (
+                              <p className="text-xs text-cyan-600 mt-0.5">Note : {item.comments}</p>
+                            )}
+                            <p className="text-xs text-slate-400 mt-0.5">Mis à jour : {formatDate(item.lastUpdated)}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {hasDetailedPlan && (
+                              <button
+                                onClick={() => toggleExpand(item.id)}
+                                className="flex items-center gap-1 text-xs text-cyan-600 hover:bg-cyan-50 px-2 py-1 rounded"
+                              >
+                                {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                                {isExpanded ? "Masquer" : "Détails"}
+                              </button>
+                            )}
+                            <Badge variant={statusBadge(item.status) as "success" | "info" | "warning" | "secondary"}>
+                              {statusOptions.find((s) => s.value === item.status)?.label || item.status}
+                            </Badge>
+                            <select
+                              value={item.status}
+                              onChange={(e) => updateItem(item.id, e.target.value)}
+                              className="text-xs border rounded px-1 py-0.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                            >
+                              {statusOptions.map((o) => (
+                                <option key={o.value} value={o.value}>{o.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                        {hasDetailedPlan && isExpanded && item.comments && (
+                          <div className="px-6 pb-5 pt-2 bg-slate-50 dark:bg-slate-900/30">
+                            <div className="bg-white dark:bg-slate-800 rounded-lg p-5 border border-cyan-200 dark:border-cyan-900/30">
+                              <LessonMarkdown content={item.comments} />
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={statusBadge(item.status) as "success" | "info" | "warning" | "secondary"}>
-                          {statusOptions.find((s) => s.value === item.status)?.label || item.status}
-                        </Badge>
-                        <select
-                          value={item.status}
-                          onChange={(e) => updateItem(item.id, e.target.value)}
-                          className="text-xs border rounded px-1 py-0.5 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
-                        >
-                          {statusOptions.map((o) => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             );
