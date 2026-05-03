@@ -2,14 +2,15 @@
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { MermaidBlock } from "./mermaid-block";
 
 interface LessonMarkdownProps {
   content: string;
 }
 
 /**
- * Rendu markdown d'une leçon avec la charte Eleo.
- * Styling manuel via les components de react-markdown (sans @tailwindcss/typography).
+ * Rendu markdown d'une lecon avec la charte Eleo.
+ * Supporte : images responsive, blocs mermaid (```mermaid ... ```), tables GFM.
  */
 export function LessonMarkdown({ content }: LessonMarkdownProps) {
   return (
@@ -36,11 +37,40 @@ export function LessonMarkdown({ content }: LessonMarkdownProps) {
             <strong className="font-semibold text-eleo-gray-800">{children}</strong>
           ),
           em: ({ children }) => <em className="italic">{children}</em>,
-          code: ({ children }) => (
-            <code className="bg-eleo-50 text-eleo-600 px-1.5 py-0.5 rounded text-sm font-mono border border-eleo-100">
-              {children}
-            </code>
+          img: ({ src, alt }) => (
+            <figure className="my-5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={typeof src === "string" ? src : ""}
+                alt={alt || ""}
+                loading="lazy"
+                className="rounded-xl border border-eleo-gray-200 shadow-sm w-full max-w-2xl mx-auto"
+              />
+              {alt && (
+                <figcaption className="text-center text-xs text-eleo-gray-500 mt-2 italic">
+                  {alt}
+                </figcaption>
+              )}
+            </figure>
           ),
+          code: ({ className, children }) => {
+            const text = String(children).replace(/\n$/, "");
+            const isMermaid = className?.includes("language-mermaid");
+            if (isMermaid) {
+              return <MermaidBlock code={text} />;
+            }
+            const isBlock = className?.startsWith("language-");
+            if (isBlock) {
+              return (
+                <code className={`block ${className || ""} text-sm`}>{children}</code>
+              );
+            }
+            return (
+              <code className="bg-eleo-50 text-eleo-600 px-1.5 py-0.5 rounded text-sm font-mono border border-eleo-100">
+                {children}
+              </code>
+            );
+          },
           pre: ({ children }) => (
             <pre className="bg-eleo-gray-900 text-white p-4 rounded-lg my-3 overflow-x-auto text-sm">
               {children}

@@ -66,6 +66,7 @@ model Module {
   orderIndex   Int
   content      String   // contenu texte/markdown
   duration     Int      // minutes
+  coverImage   String?  // URL bandeau visuel module
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -81,6 +82,7 @@ model Lesson {
   content     String
   orderIndex  Int
   type        String   @default("TEXT") // TEXT, VIDEO, EXERCISE, CASE_STUDY
+  coverImage  String?  // URL illustration en tete de lecon
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

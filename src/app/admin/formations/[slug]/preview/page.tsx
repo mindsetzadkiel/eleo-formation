@@ -154,6 +154,17 @@ export default async function FormationPreviewPage({ params }: PageProps) {
                           </span>
                         )}
                       </div>
+                      {lesson.coverImage && (
+                        <div className="mb-3 -mx-1">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={lesson.coverImage}
+                            alt={lesson.title}
+                            loading="lazy"
+                            className="w-full h-48 sm:h-64 object-cover rounded-lg border border-eleo-gray-200"
+                          />
+                        </div>
+                      )}
                       {lesson.content ? (
                         <div className="bg-eleo-gray-50 rounded-lg p-5 border border-eleo-gray-100">
                           <LessonMarkdown content={lesson.content} />
